@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -143,7 +144,10 @@ const Projects = () => {
 
   // Handle email verification
   const resendVerificationEmail = async () => {
-    const { error } = await supabase.auth.resendConfirmationEmail();
+    const { error } = await supabase.auth.resend({
+      type: 'signup'
+    });
+    
     if (error) {
       toast({
         title: "Error",
