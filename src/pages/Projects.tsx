@@ -144,8 +144,18 @@ const Projects = () => {
 
   // Handle email verification
   const resendVerificationEmail = async () => {
+    if (!user?.email) {
+      toast({
+        title: "Error",
+        description: "No email address found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase.auth.resend({
-      type: 'signup'
+      type: 'signup',
+      email: user.email,
     });
     
     if (error) {
