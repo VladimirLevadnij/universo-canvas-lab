@@ -1,12 +1,69 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Code2, Landmark, BrainCircuit } from "lucide-react";
+import { ArrowRight, Code2, Landmark, BrainCircuit, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "Come back soon!",
+      });
+      navigate('/auth');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen">
+      {/* Navigation */}
+      <nav className="absolute top-0 right-0 p-4 z-10">
+        {user ? (
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        ) : (
+          <Button 
+            variant="ghost"
+            onClick={() => navigate('/auth')}
+          >
+            Sign In
+          </Button>
+        )}
+      </nav>
+
       {/* Hero Section */}
       <div className="relative hero-gradient">
         <div className="max-w-6xl mx-auto px-4 py-20 sm:py-32">
@@ -27,9 +84,9 @@ const Index = () => {
             <div className="flex justify-center gap-4">
               <Button 
                 className="px-8 py-6 text-lg bg-black hover:bg-gray-800 text-white transition-all"
-                onClick={() => window.location.href = '/login'}
+                onClick={() => user ? navigate('/projects') : navigate('/auth')}
               >
-                Start Creating
+                {user ? 'Start Creating' : 'Sign In to Create'}
                 <ArrowRight className="ml-2" />
               </Button>
             </div>
