@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -39,7 +40,6 @@ const ProjectEditor = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const blocklyDiv = useRef<HTMLDivElement>(null);
-  const toolboxDiv = useRef<HTMLDivElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   const { data: project, isLoading } = useQuery({
@@ -177,9 +177,11 @@ const ProjectEditor = () => {
 
       // Ensure the workspace is properly sized
       const resizeBlockly = () => {
-        if (blocklyDiv.current) {
-          const {width, height} = blocklyDiv.current.getBoundingClientRect();
-          Blockly.svgResize(newWorkspace);
+        if (blocklyDiv.current && newWorkspace) {
+          // Force a resize after a short delay to ensure proper rendering
+          setTimeout(() => {
+            Blockly.svgResize(newWorkspace);
+          }, 0);
         }
       };
 
@@ -299,9 +301,12 @@ const ProjectEditor = () => {
         </div>
         <div 
           ref={blocklyDiv} 
-          className="h-full w-full"
           style={{
-            position: 'relative'
+            position: 'absolute',
+            height: 'calc(100vh - 73px)',
+            width: '50%',
+            right: 0,
+            top: '73px'
           }}
         />
       </div>
