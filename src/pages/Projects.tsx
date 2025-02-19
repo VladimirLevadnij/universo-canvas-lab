@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -109,13 +108,85 @@ const Projects = () => {
     },
   });
 
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    createProject.mutate(newProject);
+    createProject.mutate(newProject, {
+      onSuccess: (data) => {
+        setIsDialogOpen(false);
+        setNewProject({ title: '', description: '' });
+        // Redirect to the new project
+        navigate(`/projects/${data.id}`);
+        toast({
+          title: "Project created",
+          description: "Your new project has been created successfully.",
+        });
+      },
+    });
   };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "Come back soon!",
+      });
+      navigate('/auth');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle email verification
+  const resendVerificationEmail = async () => {
+    const { error } = await supabase.auth.resendConfirmationEmail();
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email sent",
+        description: "Please check your inbox for the verification link.",
+      });
+    }
+  };
+
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return data.user;
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Email verification banner */}
+      {user?.email && !user?.email_confirmed_at && (
+        <div className="bg-yellow-50 border-b border-yellow-100 p-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <p className="text-yellow-800">
+              Please verify your email address to ensure account security.
+            </p>
+            <Button
+              variant="outline"
+              onClick={resendVerificationEmail}
+              className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
+            >
+              Resend verification email
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -138,7 +209,7 @@ const Projects = () => {
                   New Project
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-white">
                 <DialogHeader>
                   <DialogTitle>Create New Project</DialogTitle>
                 </DialogHeader>

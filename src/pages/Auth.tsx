@@ -20,7 +20,7 @@ const Auth = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/');
+        navigate('/projects');
       }
     });
   }, [navigate]);
@@ -30,21 +30,35 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
+      if (isSignUp) {
+        const { error: signUpError } = await supabase.auth.signUp({ 
+          email, 
+          password,
+        });
 
-      if (error) throw error;
+        if (signUpError) throw signUpError;
 
-      toast({
-        title: isSignUp ? "Account created successfully!" : "Welcome back!",
-        description: isSignUp 
-          ? "You can now sign in with your credentials." 
-          : "You've been successfully logged in.",
-      });
+        // Automatically sign in after registration
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (!isSignUp) {
-        navigate('/');
+        if (signInError) throw signInError;
+
+        navigate('/projects');
+        toast({
+          title: "Welcome!",
+          description: "Please check your email to confirm your account. You can still use the app in the meantime.",
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+        navigate('/projects');
       }
     } catch (error: any) {
       toast({
@@ -59,7 +73,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-white">
         <CardHeader>
           <CardTitle>{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
           <CardDescription>
