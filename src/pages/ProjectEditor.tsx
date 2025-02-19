@@ -42,6 +42,50 @@ const ProjectEditor = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
+  const { data: project, isLoading } = useQuery({
+    queryKey: ['project', id],
+    queryFn: async () => {
+      if (!id) throw new Error("Project ID is required");
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data as Project;
+    },
+    enabled: !!id,
+  });
+
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const { data: projectContent } = useQuery({
+    queryKey: ['project-content', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .from('project_content')
+        .select('*')
+        .eq('project_id', id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (data) {
+        const content = data.content as unknown as FlowContent;
+        if (content.nodes && content.edges) {
+          setNodes(content.nodes);
+          setEdges(content.edges);
+        }
+      }
+      return data;
+    },
+    enabled: !!id,
+  });
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -103,56 +147,13 @@ const ProjectEditor = () => {
       setWorkspace(newWorkspace);
 
       // Load saved workspace if it exists
-      if (projectContent?.content?.blocklyXml) {
-        const xml = Blockly.utils.xml.textToDom(projectContent.content.blocklyXml);
+      const content = projectContent?.content as FlowContent | undefined;
+      if (content?.blocklyXml) {
+        const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
         Blockly.Xml.domToWorkspace(xml, newWorkspace);
       }
     }
   }, [blocklyDiv, workspace, projectContent]);
-
-  const { data: project, isLoading } = useQuery({
-    queryKey: ['project', id],
-    queryFn: async () => {
-      if (!id) throw new Error("Project ID is required");
-      
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      return data as Project;
-    },
-    enabled: !!id,
-  });
-
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-  const { data: projectContent } = useQuery({
-    queryKey: ['project-content', id],
-    queryFn: async () => {
-      if (!id) return null;
-      
-      const { data, error } = await supabase
-        .from('project_content')
-        .select('*')
-        .eq('project_id', id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      if (data) {
-        const content = data.content as unknown as FlowContent;
-        if (content.nodes && content.edges) {
-          setNodes(content.nodes);
-          setEdges(content.edges);
-        }
-      }
-      return data;
-    },
-    enabled: !!id,
-  });
 
   const saveContent = useMutation({
     mutationFn: async (content: FlowContent) => {
