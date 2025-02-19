@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
@@ -23,33 +23,66 @@ interface Project {
 const Projects = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', description: '' });
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get and monitor user session
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+      setUserId(session.user.id);
+    });
+
+    // Subscribe to auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+      setUserId(session.user.id);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   // Fetch projects
   const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects'],
+    queryKey: ['projects', userId],
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('projects')
         .select('*')
+        .eq('owner_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as Project[];
     },
+    enabled: !!userId,
   });
 
   // Create project mutation
   const createProject = useMutation({
     mutationFn: async (projectData: { title: string; description: string }) => {
+      if (!userId) throw new Error("You must be logged in to create a project");
+      
       const { data, error } = await supabase
         .from('projects')
         .insert([
           { 
             title: projectData.title,
             description: projectData.description || null,
+            owner_id: userId,
+            is_public: false
           }
         ])
         .select()
@@ -59,7 +92,7 @@ const Projects = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['projects', userId] });
       setIsDialogOpen(false);
       setNewProject({ title: '', description: '' });
       toast({
