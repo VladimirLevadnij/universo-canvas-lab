@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -147,10 +146,17 @@ const ProjectEditor = () => {
       setWorkspace(newWorkspace);
 
       // Load saved workspace if it exists
-      const content = projectContent?.content as FlowContent | undefined;
-      if (content?.blocklyXml) {
-        const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
-        Blockly.Xml.domToWorkspace(xml, newWorkspace);
+      if (projectContent?.content) {
+        // First cast to unknown, then to FlowContent
+        const content = projectContent.content as unknown as FlowContent;
+        if (content?.blocklyXml) {
+          try {
+            const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
+            Blockly.Xml.domToWorkspace(xml, newWorkspace);
+          } catch (e) {
+            console.error('Failed to load Blockly workspace:', e);
+          }
+        }
       }
     }
   }, [blocklyDiv, workspace, projectContent]);
