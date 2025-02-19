@@ -1,7 +1,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import ReactFlow, { 
+import { 
+  ReactFlow,
   Background, 
   Controls, 
   Connection,
@@ -22,6 +23,11 @@ interface Project {
   id: string;
   title: string;
   description: string | null;
+}
+
+interface FlowContent {
+  nodes: Node[];
+  edges: Edge[];
 }
 
 const ProjectEditor = () => {
@@ -78,9 +84,11 @@ const ProjectEditor = () => {
       
       if (error) throw error;
       if (data) {
-        const content = data.content as { nodes: Node[]; edges: Edge[] };
-        setNodes(content.nodes || []);
-        setEdges(content.edges || []);
+        const content = data.content as unknown as FlowContent;
+        if (content.nodes && content.edges) {
+          setNodes(content.nodes);
+          setEdges(content.edges);
+        }
       }
       return data;
     },
@@ -89,14 +97,14 @@ const ProjectEditor = () => {
 
   // Save project content
   const saveContent = useMutation({
-    mutationFn: async (content: { nodes: Node[]; edges: Edge[] }) => {
+    mutationFn: async (content: FlowContent) => {
       if (!id) throw new Error("Project ID is required");
       
       const { error } = await supabase
         .from('project_content')
         .upsert({
           project_id: id,
-          content,
+          content: content as unknown as Json,
         });
 
       if (error) throw error;
