@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -15,6 +14,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -37,7 +37,6 @@ const ProjectEditor = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Authentication check
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -48,7 +47,6 @@ const ProjectEditor = () => {
     });
   }, [navigate]);
 
-  // Fetch project details
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
@@ -66,11 +64,9 @@ const ProjectEditor = () => {
     enabled: !!id,
   });
 
-  // Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Load project content
   const { data: projectContent } = useQuery({
     queryKey: ['project-content', id],
     queryFn: async () => {
@@ -95,7 +91,6 @@ const ProjectEditor = () => {
     enabled: !!id,
   });
 
-  // Save project content
   const saveContent = useMutation({
     mutationFn: async (content: FlowContent) => {
       if (!id) throw new Error("Project ID is required");
@@ -125,7 +120,6 @@ const ProjectEditor = () => {
     },
   });
 
-  // Handle connections
   const onConnect = useCallback(
     (connection: Connection) => {
       const newEdges = addEdge(connection, edges);
@@ -135,7 +129,6 @@ const ProjectEditor = () => {
     [edges, nodes, saveContent]
   );
 
-  // Add new node
   const addNode = useCallback(() => {
     const newNode = {
       id: `node-${nodes.length + 1}`,
@@ -155,7 +148,6 @@ const ProjectEditor = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Header */}
       <header className="bg-white border-b p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -175,7 +167,6 @@ const ProjectEditor = () => {
         </div>
       </header>
 
-      {/* Canvas */}
       <div className="flex-1">
         <ReactFlow
           nodes={nodes}
