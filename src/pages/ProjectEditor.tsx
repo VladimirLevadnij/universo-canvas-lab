@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -284,17 +283,8 @@ const ProjectEditor = () => {
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-2">
-        <div 
-          ref={blocklyDiv} 
-          className="h-full relative" 
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%'
-          }}
-        />
-        <div className="h-full">
+      <div className="flex-1 grid grid-cols-2 overflow-hidden">
+        <div className="h-full relative">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -307,6 +297,13 @@ const ProjectEditor = () => {
             <Controls />
           </ReactFlow>
         </div>
+        <div 
+          ref={blocklyDiv} 
+          className="h-full w-full"
+          style={{
+            position: 'relative'
+          }}
+        />
       </div>
     </div>
   );
