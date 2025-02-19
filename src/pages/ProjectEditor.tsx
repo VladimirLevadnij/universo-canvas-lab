@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -39,6 +40,7 @@ const ProjectEditor = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const blocklyDiv = useRef<HTMLDivElement>(null);
+  const toolboxDiv = useRef<HTMLDivElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   const { data: project, isLoading } = useQuery({
@@ -127,12 +129,14 @@ const ProjectEditor = () => {
         }
       };
 
-      // Create workspace
+      // Create workspace with proper configuration
       const newWorkspace = Blockly.inject(blocklyDiv.current, {
         toolbox: `
-          <xml>
-            <block type="ar_run"></block>
-            <block type="ar_3d_model"></block>
+          <xml id="toolbox" style="display: none">
+            <category name="AR Components" colour="230">
+              <block type="ar_run"></block>
+              <block type="ar_3d_model"></block>
+            </category>
           </xml>
         `,
         grid: {
@@ -141,13 +145,26 @@ const ProjectEditor = () => {
           colour: '#ccc',
           snap: true,
         },
+        zoom: {
+          controls: true,
+          wheel: true,
+          startScale: 1.0,
+          maxScale: 3,
+          minScale: 0.3,
+          scaleSpeed: 1.2,
+        },
+        trashcan: true,
+        move: {
+          scrollbars: true,
+          drag: true,
+          wheel: true,
+        },
       });
 
       setWorkspace(newWorkspace);
 
       // Load saved workspace if it exists
       if (projectContent?.content) {
-        // First cast to unknown, then to FlowContent
         const content = projectContent.content as unknown as FlowContent;
         if (content?.blocklyXml) {
           try {
@@ -158,6 +175,22 @@ const ProjectEditor = () => {
           }
         }
       }
+
+      // Ensure the workspace is properly sized
+      const resizeBlockly = () => {
+        if (blocklyDiv.current) {
+          const {width, height} = blocklyDiv.current.getBoundingClientRect();
+          Blockly.svgResize(newWorkspace);
+        }
+      };
+
+      window.addEventListener('resize', resizeBlockly);
+      resizeBlockly();
+
+      return () => {
+        window.removeEventListener('resize', resizeBlockly);
+        newWorkspace.dispose();
+      };
     }
   }, [blocklyDiv, workspace, projectContent]);
 
@@ -252,7 +285,15 @@ const ProjectEditor = () => {
       </header>
 
       <div className="flex-1 grid grid-cols-2">
-        <div ref={blocklyDiv} className="h-full" />
+        <div 
+          ref={blocklyDiv} 
+          className="h-full relative" 
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%'
+          }}
+        />
         <div className="h-full">
           <ReactFlow
             nodes={nodes}
