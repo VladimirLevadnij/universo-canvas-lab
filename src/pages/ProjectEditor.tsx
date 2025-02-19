@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ReactFlow,
   Background, 
-  Controls, 
+  Controls,
   Connection,
   Edge, 
   Node,
@@ -17,7 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Play } from "lucide-react";
+import * as Blockly from 'blockly';
 
 interface Project {
   id: string;
@@ -28,6 +30,7 @@ interface Project {
 interface FlowContent {
   nodes: Node[];
   edges: Edge[];
+  blocklyXml?: string;
 }
 
 const ProjectEditor = () => {
@@ -36,6 +39,8 @@ const ProjectEditor = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
+  const blocklyDiv = useRef<HTMLDivElement>(null);
+  const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -46,6 +51,64 @@ const ProjectEditor = () => {
       setUserId(session.user.id);
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (blocklyDiv.current && !workspace) {
+      // Configure custom blocks
+      Blockly.Blocks['ar_run'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Run AR Application");
+          this.appendStatementInput("BLOCKS")
+              .setCheck(null);
+          this.setColour(230);
+          this.setTooltip("Start the AR application");
+          this.setHelpUrl("");
+        }
+      };
+
+      Blockly.Blocks['ar_3d_model'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("3D Model")
+              .appendField(new Blockly.FieldDropdown([
+                ["Cube", "CUBE"],
+                ["Sphere", "SPHERE"],
+                ["Cylinder", "CYLINDER"]
+              ]), "MODEL");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(160);
+          this.setTooltip("Add a 3D model to the scene");
+          this.setHelpUrl("");
+        }
+      };
+
+      // Create workspace
+      const newWorkspace = Blockly.inject(blocklyDiv.current, {
+        toolbox: `
+          <xml>
+            <block type="ar_run"></block>
+            <block type="ar_3d_model"></block>
+          </xml>
+        `,
+        grid: {
+          spacing: 20,
+          length: 3,
+          colour: '#ccc',
+          snap: true,
+        },
+      });
+
+      setWorkspace(newWorkspace);
+
+      // Load saved workspace if it exists
+      if (projectContent?.content?.blocklyXml) {
+        const xml = Blockly.utils.xml.textToDom(projectContent.content.blocklyXml);
+        Blockly.Xml.domToWorkspace(xml, newWorkspace);
+      }
+    }
+  }, [blocklyDiv, workspace, projectContent]);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -129,18 +192,27 @@ const ProjectEditor = () => {
     [edges, nodes, saveContent]
   );
 
-  const addNode = useCallback(() => {
-    const newNode = {
-      id: `node-${nodes.length + 1}`,
-      type: 'default',
-      position: { x: 100, y: 100 },
-      data: { label: `Node ${nodes.length + 1}` },
-    };
-    
-    const updatedNodes = [...nodes, newNode];
-    setNodes(updatedNodes);
-    saveContent.mutate({ nodes: updatedNodes, edges });
-  }, [nodes, edges, setNodes, saveContent]);
+  const handleSaveWorkspace = useCallback(() => {
+    if (workspace) {
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+      saveContent.mutate({
+        nodes,
+        edges,
+        blocklyXml: xmlText,
+      });
+    }
+  }, [workspace, nodes, edges, saveContent]);
+
+  const handleRunCode = useCallback(() => {
+    if (!workspace) return;
+
+    // TODO: Implement AR scene generation based on Blockly workspace
+    toast({
+      title: "Coming Soon",
+      description: "AR scene generation will be implemented in the next update.",
+    });
+  }, [workspace, toast]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -160,25 +232,33 @@ const ProjectEditor = () => {
             </Button>
             <h1 className="text-xl font-semibold">{project?.title}</h1>
           </div>
-          <Button onClick={addNode}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Node
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSaveWorkspace}>
+              Save
+            </Button>
+            <Button onClick={handleRunCode} variant="default">
+              <Play className="h-4 w-4 mr-2" />
+              Run AR Scene
+            </Button>
+          </div>
         </div>
       </header>
 
-      <div className="flex-1">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          fitView
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
+      <div className="flex-1 grid grid-cols-2">
+        <div ref={blocklyDiv} className="h-full" />
+        <div className="h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            fitView
+          >
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );
