@@ -34,6 +34,28 @@ interface FlowContent {
   blocklyXml?: string;
 }
 
+// Define the toolbox configuration
+const TOOLBOX_CONFIG = {
+  kind: 'categoryToolbox',
+  contents: [
+    {
+      kind: 'category',
+      name: 'AR Components',
+      colour: '230',
+      contents: [
+        {
+          kind: 'block',
+          type: 'ar_run',
+        },
+        {
+          kind: 'block',
+          type: 'ar_3d_model',
+        },
+      ],
+    },
+  ],
+};
+
 const ProjectEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -97,124 +119,92 @@ const ProjectEditor = () => {
     });
   }, [navigate]);
 
+  // Initialize Blockly blocks
   useEffect(() => {
-    console.log('Initializing Blockly workspace...');
-    if (blocklyDiv.current && !workspace) {
-      console.log('Container exists, creating workspace...');
-      try {
-        // Configure custom blocks
-        Blockly.Blocks['ar_run'] = {
-          init: function() {
-            this.appendDummyInput()
-                .appendField("Run AR Application");
-            this.appendStatementInput("BLOCKS")
-                .setCheck(null);
-            this.setColour(230);
-            this.setTooltip("Start the AR application");
-            this.setHelpUrl("");
-          }
-        };
+    // Define custom blocks
+    Blockly.Blocks['ar_run'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("Run AR Application");
+        this.appendStatementInput("BLOCKS")
+            .setCheck(null);
+        this.setColour(230);
+        this.setTooltip("Start the AR application");
+        this.setHelpUrl("");
+      }
+    };
 
-        Blockly.Blocks['ar_3d_model'] = {
-          init: function() {
-            this.appendDummyInput()
-                .appendField("3D Model")
-                .appendField(new Blockly.FieldDropdown([
-                  ["Cube", "CUBE"],
-                  ["Sphere", "SPHERE"],
-                  ["Cylinder", "CYLINDER"]
-                ]), "MODEL");
-            this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);
-            this.setColour(160);
-            this.setTooltip("Add a 3D model to the scene");
-            this.setHelpUrl("");
-          }
-        };
+    Blockly.Blocks['ar_3d_model'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("3D Model")
+            .appendField(new Blockly.FieldDropdown([
+              ["Cube", "CUBE"],
+              ["Sphere", "SPHERE"],
+              ["Cylinder", "CYLINDER"]
+            ]), "MODEL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+        this.setTooltip("Add a 3D model to the scene");
+        this.setHelpUrl("");
+      }
+    };
+  }, []);
 
-        const toolboxConfiguration = {
-          kind: 'categoryToolbox',
-          contents: [
-            {
-              kind: 'category',
-              name: 'AR Components',
-              colour: '230',
-              contents: [
-                {
-                  kind: 'block',
-                  type: 'ar_run'
-                },
-                {
-                  kind: 'block',
-                  type: 'ar_3d_model'
-                }
-              ]
-            }
-          ]
-        };
+  // Initialize and manage Blockly workspace
+  useEffect(() => {
+    if (!blocklyDiv.current) return;
 
-        console.log('Creating new workspace...');
-        const newWorkspace = Blockly.inject(blocklyDiv.current, {
-          toolbox: toolboxConfiguration,
-          grid: {
-            spacing: 20,
-            length: 3,
-            colour: '#ccc',
-            snap: true,
-          },
-          zoom: {
-            controls: true,
-            wheel: true,
-            startScale: 1.0,
-            maxScale: 3,
-            minScale: 0.3,
-            scaleSpeed: 1.2,
-          },
-          trashcan: true,
-          move: {
-            scrollbars: true,
-            drag: true,
-            wheel: true,
-          },
-        });
+    // Clean up any existing workspace
+    if (workspace) {
+      workspace.dispose();
+    }
 
-        console.log('Workspace created successfully');
-        setWorkspace(newWorkspace);
+    // Create new workspace
+    const newWorkspace = Blockly.inject(blocklyDiv.current, {
+      toolbox: TOOLBOX_CONFIG,
+      trashcan: true,
+      move: {
+        scrollbars: true,
+        drag: true,
+        wheel: true,
+      },
+      grid: {
+        spacing: 20,
+        length: 3,
+        colour: '#ccc',
+        snap: true,
+      },
+    });
 
-        // Load saved workspace if it exists
-        if (projectContent?.content) {
-          const content = projectContent.content as unknown as FlowContent;
-          if (content?.blocklyXml) {
-            try {
-              const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
-              Blockly.Xml.domToWorkspace(xml, newWorkspace);
-            } catch (e) {
-              console.error('Failed to load Blockly workspace:', e);
-            }
-          }
+    // Load saved workspace if it exists
+    if (projectContent?.content) {
+      const content = projectContent.content as unknown as FlowContent;
+      if (content?.blocklyXml) {
+        try {
+          const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
+          Blockly.Xml.domToWorkspace(xml, newWorkspace);
+        } catch (e) {
+          console.error('Failed to load Blockly workspace:', e);
         }
-
-        // Ensure the workspace is properly sized
-        const resizeBlockly = () => {
-          if (blocklyDiv.current && newWorkspace) {
-            console.log('Resizing Blockly workspace...');
-            Blockly.svgResize(newWorkspace);
-          }
-        };
-
-        window.addEventListener('resize', resizeBlockly);
-        // Initial resize
-        setTimeout(resizeBlockly, 100);
-
-        return () => {
-          window.removeEventListener('resize', resizeBlockly);
-          newWorkspace.dispose();
-        };
-      } catch (error) {
-        console.error('Error initializing Blockly:', error);
       }
     }
-  }, [blocklyDiv, workspace, projectContent]);
+
+    setWorkspace(newWorkspace);
+
+    // Handle workspace resize
+    const resizeObserver = new ResizeObserver(() => {
+      Blockly.svgResize(newWorkspace);
+    });
+
+    resizeObserver.observe(blocklyDiv.current);
+
+    return () => {
+      resizeObserver.disconnect();
+      newWorkspace.dispose();
+    };
+  }, [blocklyDiv, projectContent]);
 
   const saveContent = useMutation({
     mutationFn: async (content: FlowContent) => {
@@ -306,8 +296,8 @@ const ProjectEditor = () => {
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-2 overflow-hidden">
-        <div className="h-full relative">
+      <div className="flex-1 grid grid-cols-2">
+        <div className="h-full relative border-r">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -321,12 +311,9 @@ const ProjectEditor = () => {
           </ReactFlow>
         </div>
         <div 
-          ref={blocklyDiv} 
-          style={{
-            height: 'calc(100vh - 73px)',
-            backgroundColor: '#fff',
-            zIndex: 10
-          }}
+          ref={blocklyDiv}
+          className="h-full w-full"
+          style={{ minHeight: '500px' }}
         />
       </div>
     </div>
