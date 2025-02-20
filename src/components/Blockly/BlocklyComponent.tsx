@@ -11,11 +11,12 @@ interface BlocklyComponentProps {
 
 const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorkspaceChange }) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
-  const toolboxRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
+
+    console.info('Initializing Blockly workspace...');
 
     // Set locale
     Blockly.setLocale(En);
@@ -62,6 +63,15 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
         colour: '#ccc',
         snap: true,
       },
+      theme: {
+        componentStyles: {
+          workspaceBackgroundColour: '#ffffff',
+          toolboxBackgroundColour: '#f8f9fa',
+          toolboxForegroundColour: '#495057',
+          flyoutBackgroundColour: '#ffffff',
+          scrollbarColour: '#dee2e6',
+        },
+      },
     };
 
     // Initialize the workspace
@@ -91,7 +101,9 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
       }
     });
 
-    resizeObserver.observe(blocklyDiv.current);
+    if (blocklyDiv.current) {
+      resizeObserver.observe(blocklyDiv.current);
+    }
 
     // Cleanup
     return () => {
@@ -101,20 +113,23 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
   }, [initialXml, onWorkspaceChange]);
 
   return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div 
+      className="blockly-workspace-container" 
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        backgroundColor: '#ffffff',
+      }}
+    >
       <div
         ref={blocklyDiv}
         style={{
-          width: '100%',
-          height: '100%',
           position: 'absolute',
           top: 0,
           left: 0,
+          right: 0,
+          bottom: 0,
         }}
       />
     </div>

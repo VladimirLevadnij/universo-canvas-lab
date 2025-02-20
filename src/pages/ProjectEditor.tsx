@@ -17,9 +17,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, Globe } from "lucide-react";
 import * as Blockly from 'blockly/core';
 import BlocklyComponent from '@/components/Blockly/BlocklyComponent';
+import { useI18n } from '@/i18n/i18n';
 
 interface Project {
   id: string;
@@ -76,6 +77,7 @@ const ProjectEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { translations, language, setLanguage } = useI18n();
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
@@ -194,6 +196,37 @@ const ProjectEditor = () => {
     });
   }, [workspace, toast]);
 
+  useEffect(() => {
+    Blockly.Blocks['ar_run'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField(translations.arComponents.run);
+        this.appendStatementInput("BLOCKS")
+            .setCheck(null);
+        this.setColour(230);
+        this.setTooltip(translations.arComponents.run);
+        this.setHelpUrl("");
+      }
+    };
+
+    Blockly.Blocks['ar_3d_model'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField(translations.arComponents.model)
+            .appendField(new Blockly.FieldDropdown([
+              [translations.arComponents.modelTypes.cube, "CUBE"],
+              [translations.arComponents.modelTypes.sphere, "SPHERE"],
+              [translations.arComponents.modelTypes.cylinder, "CYLINDER"]
+            ]), "MODEL");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+        this.setTooltip(translations.arComponents.model);
+        this.setHelpUrl("");
+      }
+    };
+  }, [translations]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -211,17 +244,20 @@ const ProjectEditor = () => {
               onClick={() => navigate('/projects')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Projects
+              {translations.header.backToProjects}
             </Button>
             <h1 className="text-xl font-semibold">{project?.title}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button onClick={toggleLanguage} variant="ghost">
+              <Globe className="h-4 w-4" />
+            </Button>
             <Button onClick={handleSaveWorkspace}>
-              Save
+              {translations.header.save}
             </Button>
             <Button onClick={handleRunCode} variant="default">
               <Play className="h-4 w-4 mr-2" />
-              Run AR Scene
+              {translations.header.runARScene}
             </Button>
           </div>
         </div>
