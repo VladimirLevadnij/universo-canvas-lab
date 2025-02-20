@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ReactFlow,
@@ -70,6 +70,8 @@ const ProjectEditor = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -88,9 +90,6 @@ const ProjectEditor = () => {
     enabled: !!id,
   });
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
   const { data: projectContent } = useQuery({
     queryKey: ['project-content', id],
     queryFn: async () => {
@@ -104,7 +103,7 @@ const ProjectEditor = () => {
       
       if (error) throw error;
       if (data) {
-        const content = data.content as unknown as FlowContent;
+        const content = data.content as FlowContent;
         if (content.nodes && content.edges) {
           setNodes(content.nodes);
           setEdges(content.edges);
@@ -180,8 +179,6 @@ const ProjectEditor = () => {
 
   const handleRunCode = useCallback(() => {
     if (!workspace) return;
-
-    // TODO: Implement AR scene generation based on Blockly workspace
     toast({
       title: "Coming Soon",
       description: "AR scene generation will be implemented in the next update.",
@@ -234,7 +231,7 @@ const ProjectEditor = () => {
         </div>
         <div className="h-full">
           <BlocklyComponent
-            initialXml={projectContent?.content?.blocklyXml}
+            initialXml={(projectContent?.content as FlowContent | undefined)?.blocklyXml}
             onWorkspaceChange={handleWorkspaceChange}
           />
         </div>
