@@ -17,10 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Plus, Play } from "lucide-react";
-import * as Blockly from 'blockly';
-import 'blockly/blocks';
-import 'blockly/javascript';
+import { ArrowLeft, Play } from "lucide-react";
+import * as Blockly from 'blockly/core';
+import BlocklyComponent from '@/components/Blockly/BlocklyComponent';
 
 interface Project {
   id: string;
@@ -34,26 +33,34 @@ interface FlowContent {
   blocklyXml?: string;
 }
 
-// Define the toolbox configuration
-const TOOLBOX_CONFIG = {
-  kind: 'categoryToolbox',
-  contents: [
-    {
-      kind: 'category',
-      name: 'AR Components',
-      colour: '230',
-      contents: [
-        {
-          kind: 'block',
-          type: 'ar_run',
-        },
-        {
-          kind: 'block',
-          type: 'ar_3d_model',
-        },
-      ],
-    },
-  ],
+// Initialize custom blocks
+Blockly.Blocks['ar_run'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Run AR Application");
+    this.appendStatementInput("BLOCKS")
+        .setCheck(null);
+    this.setColour(230);
+    this.setTooltip("Start the AR application");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ar_3d_model'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("3D Model")
+        .appendField(new Blockly.FieldDropdown([
+          ["Cube", "CUBE"],
+          ["Sphere", "SPHERE"],
+          ["Cylinder", "CYLINDER"]
+        ]), "MODEL");
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(160);
+    this.setTooltip("Add a 3D model to the scene");
+    this.setHelpUrl("");
+  }
 };
 
 const ProjectEditor = () => {
@@ -62,7 +69,6 @@ const ProjectEditor = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
-  const blocklyDiv = useRef<HTMLDivElement>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
 
   const { data: project, isLoading } = useQuery({
@@ -119,93 +125,6 @@ const ProjectEditor = () => {
     });
   }, [navigate]);
 
-  // Initialize Blockly blocks
-  useEffect(() => {
-    // Define custom blocks
-    Blockly.Blocks['ar_run'] = {
-      init: function() {
-        this.appendDummyInput()
-            .appendField("Run AR Application");
-        this.appendStatementInput("BLOCKS")
-            .setCheck(null);
-        this.setColour(230);
-        this.setTooltip("Start the AR application");
-        this.setHelpUrl("");
-      }
-    };
-
-    Blockly.Blocks['ar_3d_model'] = {
-      init: function() {
-        this.appendDummyInput()
-            .appendField("3D Model")
-            .appendField(new Blockly.FieldDropdown([
-              ["Cube", "CUBE"],
-              ["Sphere", "SPHERE"],
-              ["Cylinder", "CYLINDER"]
-            ]), "MODEL");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(160);
-        this.setTooltip("Add a 3D model to the scene");
-        this.setHelpUrl("");
-      }
-    };
-  }, []);
-
-  // Initialize and manage Blockly workspace
-  useEffect(() => {
-    if (!blocklyDiv.current) return;
-
-    // Clean up any existing workspace
-    if (workspace) {
-      workspace.dispose();
-    }
-
-    // Create new workspace
-    const newWorkspace = Blockly.inject(blocklyDiv.current, {
-      toolbox: TOOLBOX_CONFIG,
-      trashcan: true,
-      move: {
-        scrollbars: true,
-        drag: true,
-        wheel: true,
-      },
-      grid: {
-        spacing: 20,
-        length: 3,
-        colour: '#ccc',
-        snap: true,
-      },
-    });
-
-    // Load saved workspace if it exists
-    if (projectContent?.content) {
-      const content = projectContent.content as unknown as FlowContent;
-      if (content?.blocklyXml) {
-        try {
-          const xml = Blockly.utils.xml.textToDom(content.blocklyXml);
-          Blockly.Xml.domToWorkspace(xml, newWorkspace);
-        } catch (e) {
-          console.error('Failed to load Blockly workspace:', e);
-        }
-      }
-    }
-
-    setWorkspace(newWorkspace);
-
-    // Handle workspace resize
-    const resizeObserver = new ResizeObserver(() => {
-      Blockly.svgResize(newWorkspace);
-    });
-
-    resizeObserver.observe(blocklyDiv.current);
-
-    return () => {
-      resizeObserver.disconnect();
-      newWorkspace.dispose();
-    };
-  }, [blocklyDiv, projectContent]);
-
   const saveContent = useMutation({
     mutationFn: async (content: FlowContent) => {
       if (!id) throw new Error("Project ID is required");
@@ -245,16 +164,19 @@ const ProjectEditor = () => {
   );
 
   const handleSaveWorkspace = useCallback(() => {
-    if (workspace) {
-      const xml = Blockly.Xml.workspaceToDom(workspace);
-      const xmlText = Blockly.Xml.domToText(xml);
-      saveContent.mutate({
-        nodes,
-        edges,
-        blocklyXml: xmlText,
-      });
-    }
+    if (!workspace) return;
+    const xml = Blockly.Xml.workspaceToDom(workspace);
+    const xmlText = Blockly.Xml.domToText(xml);
+    saveContent.mutate({
+      nodes,
+      edges,
+      blocklyXml: xmlText,
+    });
   }, [workspace, nodes, edges, saveContent]);
+
+  const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
+    setWorkspace(newWorkspace);
+  }, []);
 
   const handleRunCode = useCallback(() => {
     if (!workspace) return;
@@ -310,11 +232,12 @@ const ProjectEditor = () => {
             <Controls />
           </ReactFlow>
         </div>
-        <div 
-          ref={blocklyDiv}
-          className="h-full w-full"
-          style={{ minHeight: '500px' }}
-        />
+        <div className="h-full">
+          <BlocklyComponent
+            initialXml={projectContent?.content?.blocklyXml}
+            onWorkspaceChange={handleWorkspaceChange}
+          />
+        </div>
       </div>
     </div>
   );
