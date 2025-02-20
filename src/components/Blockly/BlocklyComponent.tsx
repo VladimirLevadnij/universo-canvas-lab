@@ -64,6 +64,8 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
         snap: true,
       },
       theme: {
+        name: 'custom',
+        base: 'classic',
         componentStyles: {
           workspaceBackgroundColour: '#ffffff',
           toolboxBackgroundColour: '#f8f9fa',

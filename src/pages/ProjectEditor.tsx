@@ -196,6 +196,10 @@ const ProjectEditor = () => {
     });
   }, [workspace, toast]);
 
+  const handleToggleLanguage = useCallback(() => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
+  }, [language, setLanguage]);
+
   useEffect(() => {
     Blockly.Blocks['ar_run'] = {
       init: function() {
@@ -249,7 +253,7 @@ const ProjectEditor = () => {
             <h1 className="text-xl font-semibold">{project?.title}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={toggleLanguage} variant="ghost">
+            <Button onClick={handleToggleLanguage} variant="ghost">
               <Globe className="h-4 w-4" />
             </Button>
             <Button onClick={handleSaveWorkspace}>
