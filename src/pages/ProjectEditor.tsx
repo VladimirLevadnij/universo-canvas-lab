@@ -20,9 +20,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Plus, Play } from "lucide-react";
 import * as Blockly from 'blockly';
 import 'blockly/blocks';
-import 'blockly/css.js';
 import 'blockly/javascript';
-import 'blockly/javascript_compressed';
 
 interface Project {
   id: string;
