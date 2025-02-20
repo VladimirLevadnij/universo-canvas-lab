@@ -1,17 +1,6 @@
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ReactFlow,
-  Background, 
-  Controls,
-  Connection,
-  Edge, 
-  Node,
-  addEdge,
-  useEdgesState,
-  useNodesState,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -29,48 +18,12 @@ interface Project {
 }
 
 interface FlowContent {
-  nodes: Node[];
-  edges: Edge[];
   blocklyXml?: string;
 }
 
 const isFlowContent = (content: unknown): content is FlowContent => {
   const c = content as any;
-  return (
-    c !== null &&
-    typeof c === 'object' &&
-    Array.isArray(c.nodes) &&
-    Array.isArray(c.edges)
-  );
-};
-
-Blockly.Blocks['ar_run'] = {
-  init: function() {
-    this.appendDummyInput()
-        .appendField("Run AR Application");
-    this.appendStatementInput("BLOCKS")
-        .setCheck(null);
-    this.setColour(230);
-    this.setTooltip("Start the AR application");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ar_3d_model'] = {
-  init: function() {
-    this.appendDummyInput()
-        .appendField("3D Model")
-        .appendField(new Blockly.FieldDropdown([
-          ["Cube", "CUBE"],
-          ["Sphere", "SPHERE"],
-          ["Cylinder", "CYLINDER"]
-        ]), "MODEL");
-    this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
-    this.setColour(160);
-    this.setTooltip("Add a 3D model to the scene");
-    this.setHelpUrl("");
-  }
+  return c !== null && typeof c === 'object';
 };
 
 const ProjectEditor = () => {
@@ -81,8 +34,6 @@ const ProjectEditor = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -113,13 +64,6 @@ const ProjectEditor = () => {
         .maybeSingle();
       
       if (error) throw error;
-      if (data) {
-        const content = data.content as unknown;
-        if (isFlowContent(content)) {
-          setNodes(content.nodes);
-          setEdges(content.edges);
-        }
-      }
       return data;
     },
     enabled: !!id,
@@ -151,38 +95,27 @@ const ProjectEditor = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-content', id] });
       toast({
-        title: "Changes saved",
-        description: "Your changes have been saved successfully.",
+        title: translations.toasts.saved.title,
+        description: translations.toasts.saved.description,
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: translations.toasts.error.title,
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      const newEdges = addEdge(connection, edges);
-      setEdges(newEdges);
-      saveContent.mutate({ nodes, edges: newEdges });
-    },
-    [edges, nodes, saveContent]
-  );
-
   const handleSaveWorkspace = useCallback(() => {
     if (!workspace) return;
     const xml = Blockly.Xml.workspaceToDom(workspace);
     const xmlText = Blockly.Xml.domToText(xml);
     saveContent.mutate({
-      nodes,
-      edges,
       blocklyXml: xmlText,
     });
-  }, [workspace, nodes, edges, saveContent]);
+  }, [workspace, saveContent]);
 
   const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
     setWorkspace(newWorkspace);
@@ -191,10 +124,10 @@ const ProjectEditor = () => {
   const handleRunCode = useCallback(() => {
     if (!workspace) return;
     toast({
-      title: "Coming Soon",
-      description: "AR scene generation will be implemented in the next update.",
+      title: translations.toasts.comingSoon.title,
+      description: translations.toasts.comingSoon.description,
     });
-  }, [workspace, toast]);
+  }, [workspace, toast, translations]);
 
   const handleToggleLanguage = useCallback(() => {
     setLanguage(language === 'en' ? 'ru' : 'en');
@@ -267,26 +200,11 @@ const ProjectEditor = () => {
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-2">
-        <div className="h-full relative border-r">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            fitView
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
-        </div>
-        <div className="h-full">
-          <BlocklyComponent
-            initialXml={initialXml}
-            onWorkspaceChange={handleWorkspaceChange}
-          />
-        </div>
+      <div className="flex-1">
+        <BlocklyComponent
+          initialXml={initialXml}
+          onWorkspaceChange={handleWorkspaceChange}
+        />
       </div>
     </div>
   );
