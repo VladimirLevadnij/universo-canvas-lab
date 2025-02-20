@@ -33,7 +33,16 @@ interface FlowContent {
   blocklyXml?: string;
 }
 
-// Initialize custom blocks
+const isFlowContent = (content: unknown): content is FlowContent => {
+  const c = content as any;
+  return (
+    c !== null &&
+    typeof c === 'object' &&
+    Array.isArray(c.nodes) &&
+    Array.isArray(c.edges)
+  );
+};
+
 Blockly.Blocks['ar_run'] = {
   init: function() {
     this.appendDummyInput()
@@ -103,8 +112,8 @@ const ProjectEditor = () => {
       
       if (error) throw error;
       if (data) {
-        const content = data.content as FlowContent;
-        if (content.nodes && content.edges) {
+        const content = data.content as unknown;
+        if (isFlowContent(content)) {
           setNodes(content.nodes);
           setEdges(content.edges);
         }
@@ -189,6 +198,9 @@ const ProjectEditor = () => {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
+  const flowContent = projectContent?.content as unknown;
+  const initialXml = isFlowContent(flowContent) ? flowContent.blocklyXml : undefined;
+
   return (
     <div className="h-screen flex flex-col">
       <header className="bg-white border-b p-4">
@@ -231,7 +243,7 @@ const ProjectEditor = () => {
         </div>
         <div className="h-full">
           <BlocklyComponent
-            initialXml={(projectContent?.content as FlowContent | undefined)?.blocklyXml}
+            initialXml={initialXml}
             onWorkspaceChange={handleWorkspaceChange}
           />
         </div>
