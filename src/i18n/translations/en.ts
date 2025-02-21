@@ -73,6 +73,7 @@ export const en = {
       enterTitle: 'Enter project title',
       enterDescription: 'Enter project description',
     },
+    created: 'Created',
     emailVerification: {
       message: 'Please verify your email address to ensure account security.',
       resend: 'Resend verification email'
