@@ -35,15 +35,34 @@ const Projects = () => {
     projects: {
       title: 'My Projects',
       newProject: 'New Project',
+      emailVerification: {
+        message: 'Please verify your email address to ensure account security.',
+        resend: 'Resend verification email',
+      },
+      createProject: 'Create New Project',
+      projectTitle: 'Project Title',
+      description: 'Description',
+      form: {
+        enterTitle: 'Enter project title',
+        enterDescription: 'Enter project description',
+      },
+      actions: {
+        creating: 'Creating...',
+        create: 'Create Project',
+        open: 'Open Project',
+      },
+      loading: 'Loading projects...',
+      empty: {
+        title: 'No projects',
+        description: 'Get started by creating a new project.',
+      },
     },
     auth: {
       signOut: 'Sign Out',
     },
   };
 
-  // Get and monitor user session
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate('/auth');
@@ -52,7 +71,6 @@ const Projects = () => {
       setUserId(session.user.id);
     });
 
-    // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -66,7 +84,6 @@ const Projects = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Fetch projects
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects', userId],
     queryFn: async () => {
@@ -83,7 +100,6 @@ const Projects = () => {
     enabled: !!userId,
   });
 
-  // Create project mutation
   const createProject = useMutation({
     mutationFn: async (projectData: { title: string; description: string }) => {
       if (!userId) throw new Error("You must be logged in to create a project");
@@ -198,29 +214,23 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Email verification banner */}
       {user?.email && !user?.email_confirmed_at && (
         <div className="bg-yellow-50 border-b border-yellow-100 p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <p className="text-yellow-800">
-              {language === 'en' 
-                ? "Please verify your email address to ensure account security."
-                : "Пожалуйста, подтвердите ваш email для обеспечения безопасности аккаунта."}
+              {translations.projects.emailVerification.message}
             </p>
             <Button
               variant="outline"
               onClick={resendVerificationEmail}
               className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
             >
-              {language === 'en'
-                ? "Resend verification email"
-                : "Отправить письмо повторно"}
+              {translations.projects.emailVerification.resend}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
@@ -245,26 +255,26 @@ const Projects = () => {
                 </DialogTrigger>
                 <DialogContent className="bg-white">
                   <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogTitle>{translations.projects.createProject}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleCreateProject} className="space-y-4">
                     <div>
-                      <Label htmlFor="title">Project Title</Label>
+                      <Label htmlFor="title">{translations.projects.projectTitle}</Label>
                       <Input
                         id="title"
                         value={newProject.title}
                         onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Enter project title"
+                        placeholder={translations.projects.form.enterTitle}
                         required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">{translations.projects.description}</Label>
                       <Textarea
                         id="description"
                         value={newProject.description}
                         onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Enter project description"
+                        placeholder={translations.projects.form.enterDescription}
                         rows={3}
                       />
                     </div>
@@ -273,7 +283,9 @@ const Projects = () => {
                       className="w-full"
                       disabled={createProject.isPending}
                     >
-                      {createProject.isPending ? "Creating..." : "Create Project"}
+                      {createProject.isPending 
+                        ? translations.projects.actions.creating 
+                        : translations.projects.actions.create}
                     </Button>
                   </form>
                 </DialogContent>
@@ -294,15 +306,18 @@ const Projects = () => {
         </div>
       </header>
 
-      {/* Project Grid */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {isLoading ? (
-          <div className="text-center py-12">Loading projects...</div>
+          <div className="text-center py-12">{translations.projects.loading}</div>
         ) : !projects?.length ? (
           <div className="text-center py-12">
             <Folder className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">No projects</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new project.</p>
+            <h3 className="mt-2 text-sm font-semibold text-gray-900">
+              {translations.projects.empty.title}
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {translations.projects.empty.description}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -322,7 +337,7 @@ const Projects = () => {
                     className="w-full"
                     onClick={() => navigate(`/projects/${project.id}`)}
                   >
-                    Open Project
+                    {translations.projects.actions.open}
                   </Button>
                 </CardFooter>
               </Card>

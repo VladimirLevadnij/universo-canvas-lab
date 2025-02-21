@@ -89,7 +89,7 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>{isSignUp ? translations.auth.createYourAccount : translations.auth.welcomeBack}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Sign up to start creating AR experiences" : "Sign in to continue building"}
+              {isSignUp ? translations.auth.signUpMessage : translations.auth.signInMessage}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleAuth}>
@@ -132,7 +132,7 @@ const Auth = () => {
                 disabled={isLoading}
               >
                 {isLoading 
-                  ? "Loading..." 
+                  ? translations.auth.loading
                   : isSignUp 
                     ? translations.auth.createAccount 
                     : translations.auth.signIn}

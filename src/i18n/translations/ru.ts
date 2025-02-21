@@ -25,6 +25,9 @@ export const ru = {
     password: 'Пароль',
     alreadyHaveAccount: 'Уже есть аккаунт? Войти',
     dontHaveAccount: 'Нет аккаунта? Зарегистрироваться',
+    loading: 'Загрузка...',
+    signUpMessage: 'Зарегистрируйтесь, чтобы начать создавать AR-приложения',
+    signInMessage: 'Войдите, чтобы продолжить работу'
   },
   home: {
     beta: 'Бета-версия',
@@ -47,7 +50,7 @@ export const ru = {
       }
     },
     footer: {
-      copyright: '© 2024 Universo Platformo. Все права защищены.'
+      copyright: '© 2025 Universo Platformo. Все права защищены.'
     }
   },
   projects: {
@@ -66,6 +69,14 @@ export const ru = {
       description: 'Начните с создания нового проекта.',
     },
     loading: 'Загрузка проектов...',
+    form: {
+      enterTitle: 'Введите название проекта',
+      enterDescription: 'Введите описание проекта',
+    },
+    emailVerification: {
+      message: 'Пожалуйста, подтвердите ваш email для обеспечения безопасности аккаунта.',
+      resend: 'Отправить письмо повторно'
+    }
   },
   toasts: {
     saved: {
@@ -84,6 +95,12 @@ export const ru = {
       loggedOut: {
         title: 'Выход выполнен успешно',
         description: 'Возвращайтесь скорее!',
+      }
+    },
+    project: {
+      created: {
+        title: 'Проект создан',
+        description: 'Ваш новый проект был успешно создан.',
       }
     }
   },

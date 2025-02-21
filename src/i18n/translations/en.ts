@@ -25,6 +25,9 @@ export const en = {
     password: 'Password',
     alreadyHaveAccount: 'Already have an account? Sign In',
     dontHaveAccount: "Don't have an account? Sign Up",
+    loading: 'Loading...',
+    signUpMessage: 'Sign up to start creating AR experiences',
+    signInMessage: 'Sign in to continue building'
   },
   home: {
     beta: 'Beta Release',
@@ -47,7 +50,7 @@ export const en = {
       }
     },
     footer: {
-      copyright: '© 2024 Universo Platformo. All rights reserved.'
+      copyright: '© 2025 Universo Platformo. All rights reserved.'
     }
   },
   projects: {
@@ -66,6 +69,14 @@ export const en = {
       description: 'Get started by creating a new project.',
     },
     loading: 'Loading projects...',
+    form: {
+      enterTitle: 'Enter project title',
+      enterDescription: 'Enter project description',
+    },
+    emailVerification: {
+      message: 'Please verify your email address to ensure account security.',
+      resend: 'Resend verification email'
+    }
   },
   toasts: {
     saved: {
@@ -84,6 +95,12 @@ export const en = {
       loggedOut: {
         title: 'Logged out successfully',
         description: 'Come back soon!',
+      }
+    },
+    project: {
+      created: {
+        title: 'Project created',
+        description: 'Your new project has been created successfully.',
       }
     }
   },
