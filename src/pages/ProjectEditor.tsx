@@ -40,14 +40,22 @@ const ProjectEditor = () => {
 
   const handleSaveWorkspace = useCallback(() => {
     if (!workspace) return;
+
+    console.log('Saving workspace...');
+    
+    // Сохраняем текущее состояние рабочего пространства
     const xml = Blockly.Xml.workspaceToDom(workspace);
     const xmlText = Blockly.Xml.domToText(xml);
+    
+    console.log('XML to save:', xmlText);
+    
     saveContent.mutate({
       blocklyXml: xmlText,
     });
   }, [workspace, saveContent]);
 
   const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
+    console.log('Workspace changed');
     setWorkspace(newWorkspace);
   }, []);
 
@@ -63,12 +71,16 @@ const ProjectEditor = () => {
     setLanguage(language === 'en' ? 'ru' : 'en');
   }, [language, setLanguage]);
 
+  // Если проект загружается или не найден, показываем загрузку
   if (isLoading || !project) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
+  // Получаем XML из содержимого проекта
   const flowContent = projectContent?.content as unknown;
   const initialXml = isFlowContent(flowContent) ? flowContent.blocklyXml : undefined;
+
+  console.log('Initial XML:', initialXml);
 
   return (
     <div className="h-screen flex flex-col">

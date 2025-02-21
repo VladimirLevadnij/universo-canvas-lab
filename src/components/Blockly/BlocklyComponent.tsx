@@ -16,7 +16,7 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
-    console.info('Initializing Blockly workspace...');
+    console.log('Initializing Blockly workspace...');
 
     // Set locale
     Blockly.setLocale(En);
@@ -82,8 +82,10 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
     // Load initial XML if provided
     if (initialXml) {
       try {
+        console.log('Loading initial XML:', initialXml);
         const xml = Blockly.utils.xml.textToDom(initialXml);
         Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+        console.log('Initial XML loaded successfully');
       } catch (e) {
         console.error('Error loading initial XML:', e);
       }
@@ -91,9 +93,12 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
 
     // Set up workspace change listener
     if (onWorkspaceChange && workspaceRef.current) {
-      workspaceRef.current.addChangeListener(() => {
-        onWorkspaceChange(workspaceRef.current!);
-      });
+      const changeListener = () => {
+        if (workspaceRef.current) {
+          onWorkspaceChange(workspaceRef.current);
+        }
+      };
+      workspaceRef.current.addChangeListener(changeListener);
     }
 
     // Handle resize
@@ -110,7 +115,9 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
     // Cleanup
     return () => {
       resizeObserver.disconnect();
-      workspaceRef.current?.dispose();
+      if (workspaceRef.current) {
+        workspaceRef.current.dispose();
+      }
     };
   }, [initialXml, onWorkspaceChange]);
 
