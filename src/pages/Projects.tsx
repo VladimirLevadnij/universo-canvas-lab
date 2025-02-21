@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useI18n } from "@/i18n/i18n";
 import { FolderPlus, Folder, ArrowLeft, LogOut, Globe } from "lucide-react";
 
 interface Project {
@@ -26,40 +28,10 @@ const Projects = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [language, setLanguage] = useState('en');
+  const { translations, setLanguage, language } = useI18n();
 
-  const translations = {
-    header: {
-      backToProjects: 'Back to Projects',
-    },
-    projects: {
-      title: 'My Projects',
-      newProject: 'New Project',
-      emailVerification: {
-        message: 'Please verify your email address to ensure account security.',
-        resend: 'Resend verification email',
-      },
-      createProject: 'Create New Project',
-      projectTitle: 'Project Title',
-      description: 'Description',
-      form: {
-        enterTitle: 'Enter project title',
-        enterDescription: 'Enter project description',
-      },
-      actions: {
-        creating: 'Creating...',
-        create: 'Create Project',
-        open: 'Open Project',
-      },
-      loading: 'Loading projects...',
-      empty: {
-        title: 'No projects',
-        description: 'Get started by creating a new project.',
-      },
-    },
-    auth: {
-      signOut: 'Sign Out',
-    },
+  const handleToggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
   };
 
   useEffect(() => {
@@ -125,13 +97,13 @@ const Projects = () => {
       setIsDialogOpen(false);
       setNewProject({ title: '', description: '' });
       toast({
-        title: "Project created",
-        description: "Your new project has been created successfully.",
+        title: translations.toasts.project.created.title,
+        description: translations.toasts.project.created.description,
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: translations.toasts.error.title,
         description: error.message,
         variant: "destructive",
       });
@@ -142,13 +114,7 @@ const Projects = () => {
     e.preventDefault();
     createProject.mutate(newProject, {
       onSuccess: (data) => {
-        setIsDialogOpen(false);
-        setNewProject({ title: '', description: '' });
         navigate(`/projects/${data.id}`);
-        toast({
-          title: "Project created",
-          description: "Your new project has been created successfully.",
-        });
       },
     });
   };
@@ -157,27 +123,32 @@ const Projects = () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Logged out successfully",
-        description: "Come back soon!",
+        title: translations.toasts.auth.loggedOut.title,
+        description: translations.toasts.auth.loggedOut.description,
       });
       navigate('/auth');
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: translations.toasts.error.title,
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const handleToggleLanguage = () => {
-    setLanguage(language === 'en' ? 'ru' : 'en');
-  };
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return data.user;
+    },
+  });
 
   const resendVerificationEmail = async () => {
     if (!user?.email) {
       toast({
-        title: "Error",
+        title: translations.toasts.error.title,
         description: "No email address found",
         variant: "destructive",
       });
@@ -191,7 +162,7 @@ const Projects = () => {
     
     if (error) {
       toast({
-        title: "Error",
+        title: translations.toasts.error.title,
         description: error.message,
         variant: "destructive",
       });
@@ -202,15 +173,6 @@ const Projects = () => {
       });
     }
   };
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      return data.user;
-    },
-  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -329,7 +291,7 @@ const Projects = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500">
-                    {translations.projects.created} {new Date(project.created_at).toLocaleDateString()}
+                    {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
                 <CardFooter>
