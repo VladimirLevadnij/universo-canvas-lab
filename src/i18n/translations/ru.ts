@@ -73,6 +73,7 @@ export const ru = {
       enterTitle: 'Введите название проекта',
       enterDescription: 'Введите описание проекта',
     },
+    created: 'Создан',
     emailVerification: {
       message: 'Пожалуйста, подтвердите ваш email для обеспечения безопасности аккаунта.',
       resend: 'Отправить письмо повторно'

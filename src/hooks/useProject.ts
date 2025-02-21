@@ -63,14 +63,34 @@ export const useProject = ({ id, translations }: UseProjectProps) => {
     mutationFn: async (content: FlowContent) => {
       if (!id) throw new Error("Project ID is required");
       
-      const { error } = await supabase
+      // Проверяем существование записи перед upsert
+      const { data: existingContent } = await supabase
         .from('project_content')
-        .upsert({
-          project_id: id,
-          content: content as unknown as Json,
-        });
+        .select('*')
+        .eq('project_id', id)
+        .maybeSingle();
 
-      if (error) throw error;
+      // Если запись не существует, создаем новую
+      if (!existingContent) {
+        const { error } = await supabase
+          .from('project_content')
+          .insert([{
+            project_id: id,
+            content: content as unknown as Json,
+          }]);
+
+        if (error) throw error;
+      } else {
+        // Если запись существует, обновляем её
+        const { error } = await supabase
+          .from('project_content')
+          .update({
+            content: content as unknown as Json,
+          })
+          .eq('project_id', id);
+
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-content', id] });

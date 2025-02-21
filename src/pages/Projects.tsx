@@ -329,7 +329,7 @@ const Projects = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500">
-                    Created {new Date(project.created_at).toLocaleDateString()}
+                    {translations.projects.created} {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
                 <CardFooter>
