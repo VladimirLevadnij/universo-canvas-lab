@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { FolderPlus, Folder, ArrowLeft } from "lucide-react";
+import { FolderPlus, Folder, ArrowLeft, LogOut, Globe } from "lucide-react";
 
 interface Project {
   id: string;
@@ -27,6 +26,20 @@ const Projects = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [language, setLanguage] = useState('en');
+
+  const translations = {
+    header: {
+      backToProjects: 'Back to Projects',
+    },
+    projects: {
+      title: 'My Projects',
+      newProject: 'New Project',
+    },
+    auth: {
+      signOut: 'Sign Out',
+    },
+  };
 
   // Get and monitor user session
   useEffect(() => {
@@ -115,7 +128,6 @@ const Projects = () => {
       onSuccess: (data) => {
         setIsDialogOpen(false);
         setNewProject({ title: '', description: '' });
-        // Redirect to the new project
         navigate(`/projects/${data.id}`);
         toast({
           title: "Project created",
@@ -142,7 +154,10 @@ const Projects = () => {
     }
   };
 
-  // Handle email verification
+  const handleToggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
+  };
+
   const resendVerificationEmail = async () => {
     if (!user?.email) {
       toast({
@@ -188,14 +203,18 @@ const Projects = () => {
         <div className="bg-yellow-50 border-b border-yellow-100 p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <p className="text-yellow-800">
-              Please verify your email address to ensure account security.
+              {language === 'en' 
+                ? "Please verify your email address to ensure account security."
+                : "Пожалуйста, подтвердите ваш email для обеспечения безопасности аккаунта."}
             </p>
             <Button
               variant="outline"
               onClick={resendVerificationEmail}
               className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
             >
-              Resend verification email
+              {language === 'en'
+                ? "Resend verification email"
+                : "Отправить письмо повторно"}
             </Button>
           </div>
         </div>
@@ -212,52 +231,65 @@ const Projects = () => {
                 className="mr-4"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {translations.header.backToProjects}
               </Button>
-              <h1 className="text-2xl font-semibold text-gray-900">My Projects</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">{translations.projects.title}</h1>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <FolderPlus className="h-4 w-4 mr-2" />
-                  New Project
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-white">
-                <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreateProject} className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Project Title</Label>
-                    <Input
-                      id="title"
-                      value={newProject.title}
-                      onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter project title"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newProject.description}
-                      onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter project description"
-                      rows={3}
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={createProject.isPending}
-                  >
-                    {createProject.isPending ? "Creating..." : "Create Project"}
+            <div className="flex items-center gap-2">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <FolderPlus className="h-4 w-4 mr-2" />
+                    {translations.projects.newProject}
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="bg-white">
+                  <DialogHeader>
+                    <DialogTitle>Create New Project</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateProject} className="space-y-4">
+                    <div>
+                      <Label htmlFor="title">Project Title</Label>
+                      <Input
+                        id="title"
+                        value={newProject.title}
+                        onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter project title"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newProject.description}
+                        onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Enter project description"
+                        rows={3}
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={createProject.isPending}
+                    >
+                      {createProject.isPending ? "Creating..." : "Create Project"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Button 
+                variant="ghost" 
+                onClick={handleLogout}
+                className="hover:bg-red-50 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {translations.auth.signOut}
+              </Button>
+              <Button onClick={handleToggleLanguage} variant="ghost">
+                <Globe className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>

@@ -39,15 +39,15 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           <h1 className="text-xl font-semibold">{project.title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={onToggleLanguage} variant="ghost">
-            <Globe className="h-4 w-4" />
-          </Button>
           <Button onClick={onSave}>
             {translations.save}
           </Button>
           <Button onClick={onRun} variant="default">
             <Play className="h-4 w-4 mr-2" />
             {translations.runARScene}
+          </Button>
+          <Button onClick={onToggleLanguage} variant="ghost">
+            <Globe className="h-4 w-4" />
           </Button>
         </div>
       </div>
