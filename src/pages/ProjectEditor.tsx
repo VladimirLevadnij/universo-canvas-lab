@@ -60,6 +60,23 @@ const ProjectEditor = () => {
     });
   }, [workspace, saveContent]);
 
+  const shouldSaveWorkspace = useCallback((event: Blockly.Events.Abstract) => {
+    // Игнорируем события, которые не должны вызывать сохранение
+    if (event.type === Blockly.Events.BLOCK_DRAG ||
+        event.type === Blockly.Events.SELECTED ||
+        event.type === Blockly.Events.THEME_CHANGE ||
+        event.type === Blockly.Events.VIEWPORT_CHANGE ||
+        event.type === Blockly.Events.TOOLBOX_ITEM_SELECT) {
+      return false;
+    }
+
+    // Сохраняем только при реальных изменениях в блоках
+    return event.type === Blockly.Events.BLOCK_CHANGE ||
+           event.type === Blockly.Events.BLOCK_CREATE ||
+           event.type === Blockly.Events.BLOCK_DELETE ||
+           event.type === Blockly.Events.BLOCK_MOVE;
+  }, []);
+
   const debouncedSave = useCallback((newWorkspace: ExtendedWorkspace) => {
     if (lastSaveTimeout) {
       clearTimeout(lastSaveTimeout);
@@ -75,32 +92,33 @@ const ProjectEditor = () => {
           blocklyXml: xmlText,
         });
       }
-    }, 2000); // Задержка в 2 секунды
+    }, 2000);
 
     setLastSaveTimeout(timeout);
   }, [isDragging, saveContent, lastSaveTimeout]);
 
-  // Обработчик изменений в workspace с учетом перетаскивания
   const handleWorkspaceChange = useCallback((newWorkspace: ExtendedWorkspace) => {
     console.log('Workspace changed');
     setWorkspace(newWorkspace);
     
-    // Добавляем обработчики начала и окончания перетаскивания
     if (!newWorkspace._dragListenerAdded) {
       newWorkspace.addChangeListener((event: Blockly.Events.Abstract) => {
+        // Обработка перетаскивания
         if (event.type === Blockly.Events.BLOCK_DRAG) {
           const dragEvent = event as Blockly.Events.BlockDrag;
           setIsDragging(dragEvent.isStart || false);
+          return;
+        }
+
+        // Проверяем, нужно ли сохранять после этого события
+        if (shouldSaveWorkspace(event) && !isDragging) {
+          debouncedSave(newWorkspace);
         }
       });
       newWorkspace._dragListenerAdded = true;
     }
+  }, [debouncedSave, isDragging, shouldSaveWorkspace]);
 
-    // Используем отложенное сохранение
-    debouncedSave(newWorkspace);
-  }, [debouncedSave]);
-
-  // Очистка таймера при размонтировании
   useEffect(() => {
     return () => {
       if (lastSaveTimeout) {
