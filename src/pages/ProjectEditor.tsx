@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import * as Blockly from 'blockly/core';
 import BlocklyComponent from '@/components/Blockly/BlocklyComponent';
 import { useI18n } from '@/i18n/i18n';
@@ -18,6 +18,7 @@ const ProjectEditor = () => {
   const { translations, language, setLanguage } = useI18n();
   const [userId, setUserId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,9 +42,8 @@ const ProjectEditor = () => {
   const handleSaveWorkspace = useCallback(() => {
     if (!workspace) return;
 
-    console.log('Saving workspace...');
+    console.log('Manual saving workspace...');
     
-    // Сохраняем текущее состояние рабочего пространства
     const xml = Blockly.Xml.workspaceToDom(workspace);
     const xmlText = Blockly.Xml.domToText(xml);
     
@@ -54,21 +54,32 @@ const ProjectEditor = () => {
     });
   }, [workspace, saveContent]);
 
-  // Автоматическое сохранение при изменении workspace
+  // Обработчик изменений в workspace с учетом перетаскивания
   const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
     console.log('Workspace changed');
     setWorkspace(newWorkspace);
     
-    // При каждом изменении сохраняем состояние
-    const xml = Blockly.Xml.workspaceToDom(newWorkspace);
-    const xmlText = Blockly.Xml.domToText(xml);
-    
-    console.log('Auto-saving XML:', xmlText);
-    
-    saveContent.mutate({
-      blocklyXml: xmlText,
-    });
-  }, [saveContent]);
+    // Добавляем обработчики начала и окончания перетаскивания
+    if (!newWorkspace.dragStartListener) {
+      newWorkspace.addChangeListener((event) => {
+        if (event.type === Blockly.Events.BLOCK_DRAG) {
+          setIsDragging(event.isStart);
+        }
+      });
+      newWorkspace.dragStartListener = true;
+    }
+
+    // Сохраняем только если это не перетаскивание
+    if (!isDragging) {
+      const xml = Blockly.Xml.workspaceToDom(newWorkspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+      console.log('Auto-saving XML:', xmlText);
+      
+      saveContent.mutate({
+        blocklyXml: xmlText,
+      });
+    }
+  }, [saveContent, isDragging]);
 
   const handleRunCode = useCallback(() => {
     if (!workspace) return;
@@ -82,19 +93,17 @@ const ProjectEditor = () => {
     setLanguage(language === 'en' ? 'ru' : 'en');
   }, [language, setLanguage]);
 
-  // Если проект загружается или не найден, показываем загрузку
   if (isLoading || !project) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  // Получаем XML из содержимого проекта
   const flowContent = projectContent?.content as unknown;
   const initialXml = isFlowContent(flowContent) ? flowContent.blocklyXml : undefined;
 
   console.log('Initial XML:', initialXml);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
       <EditorHeader
         project={project}
         onNavigateBack={() => navigate('/projects')}
