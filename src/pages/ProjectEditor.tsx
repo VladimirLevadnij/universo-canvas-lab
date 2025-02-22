@@ -24,6 +24,7 @@ const ProjectEditor = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<ExtendedWorkspace | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [lastSaveTimeout, setLastSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,6 +60,26 @@ const ProjectEditor = () => {
     });
   }, [workspace, saveContent]);
 
+  const debouncedSave = useCallback((newWorkspace: ExtendedWorkspace) => {
+    if (lastSaveTimeout) {
+      clearTimeout(lastSaveTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      if (!isDragging) {
+        const xml = Blockly.Xml.workspaceToDom(newWorkspace);
+        const xmlText = Blockly.Xml.domToText(xml);
+        console.log('Auto-saving XML:', xmlText);
+        
+        saveContent.mutate({
+          blocklyXml: xmlText,
+        });
+      }
+    }, 2000); // Задержка в 2 секунды
+
+    setLastSaveTimeout(timeout);
+  }, [isDragging, saveContent, lastSaveTimeout]);
+
   // Обработчик изменений в workspace с учетом перетаскивания
   const handleWorkspaceChange = useCallback((newWorkspace: ExtendedWorkspace) => {
     console.log('Workspace changed');
@@ -75,17 +96,18 @@ const ProjectEditor = () => {
       newWorkspace._dragListenerAdded = true;
     }
 
-    // Сохраняем только если это не перетаскивание
-    if (!isDragging) {
-      const xml = Blockly.Xml.workspaceToDom(newWorkspace);
-      const xmlText = Blockly.Xml.domToText(xml);
-      console.log('Auto-saving XML:', xmlText);
-      
-      saveContent.mutate({
-        blocklyXml: xmlText,
-      });
-    }
-  }, [saveContent, isDragging]);
+    // Используем отложенное сохранение
+    debouncedSave(newWorkspace);
+  }, [debouncedSave]);
+
+  // Очистка таймера при размонтировании
+  useEffect(() => {
+    return () => {
+      if (lastSaveTimeout) {
+        clearTimeout(lastSaveTimeout);
+      }
+    };
+  }, [lastSaveTimeout]);
 
   const handleRunCode = useCallback(() => {
     if (!workspace) return;

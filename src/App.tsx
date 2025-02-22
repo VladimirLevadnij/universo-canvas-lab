@@ -16,8 +16,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="w-screen h-screen overflow-hidden">
-          <Router>
+        <Router>
+          <div className="min-h-screen min-w-screen">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -25,9 +25,9 @@ function App() {
               <Route path="/projects/:id" element={<ProjectEditor />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <Toaster />
-          </Router>
-        </div>
+          </div>
+          <Toaster />
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );
