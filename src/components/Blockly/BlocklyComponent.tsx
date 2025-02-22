@@ -3,13 +3,19 @@ import React, { useRef, useEffect } from 'react';
 import * as Blockly from 'blockly/core';
 import 'blockly/blocks';
 import * as En from 'blockly/msg/en';
+import * as Ru from 'blockly/msg/ru';
 
 interface BlocklyComponentProps {
   initialXml?: string;
   onWorkspaceChange?: (workspace: Blockly.WorkspaceSvg) => void;
+  language?: 'en' | 'ru';
 }
 
-const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorkspaceChange }) => {
+const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ 
+  initialXml, 
+  onWorkspaceChange,
+  language = 'en'
+}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
@@ -18,8 +24,9 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
 
     console.log('Initializing Blockly workspace...');
 
-    // Set locale
-    Blockly.setLocale(En);
+    // Set locale based on current language
+    const messages = language === 'en' ? En : Ru;
+    Blockly.setLocale(messages);
 
     // Configure the workspace
     const options: Blockly.BlocklyOptions = {
@@ -236,7 +243,7 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
         workspaceRef.current.dispose();
       }
     };
-  }, [initialXml, onWorkspaceChange]);
+  }, [initialXml, onWorkspaceChange, language]);
 
   return (
     <div 

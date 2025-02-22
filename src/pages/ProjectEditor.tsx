@@ -29,8 +29,8 @@ const ProjectEditor = () => {
     });
   }, [navigate]);
 
-  // Initialize Blockly blocks
-  useBlockly({ translations });
+  // Initialize Blockly blocks with language support
+  useBlockly({ translations, language });
 
   // Initialize project data and mutations
   const { project, projectContent, isLoading, saveContent } = useProject({
@@ -54,10 +54,21 @@ const ProjectEditor = () => {
     });
   }, [workspace, saveContent]);
 
+  // Автоматическое сохранение при изменении workspace
   const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
     console.log('Workspace changed');
     setWorkspace(newWorkspace);
-  }, []);
+    
+    // При каждом изменении сохраняем состояние
+    const xml = Blockly.Xml.workspaceToDom(newWorkspace);
+    const xmlText = Blockly.Xml.domToText(xml);
+    
+    console.log('Auto-saving XML:', xmlText);
+    
+    saveContent.mutate({
+      blocklyXml: xmlText,
+    });
+  }, [saveContent]);
 
   const handleRunCode = useCallback(() => {
     if (!workspace) return;
@@ -97,6 +108,7 @@ const ProjectEditor = () => {
         <BlocklyComponent
           initialXml={initialXml}
           onWorkspaceChange={handleWorkspaceChange}
+          language={language}
         />
       </div>
     </div>

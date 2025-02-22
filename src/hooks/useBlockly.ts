@@ -1,6 +1,8 @@
 
 import { useCallback, useEffect } from 'react';
 import * as Blockly from 'blockly/core';
+import * as En from 'blockly/msg/en';
+import * as Ru from 'blockly/msg/ru';
 
 interface UseBlocklyProps {
   translations: {
@@ -14,10 +16,20 @@ interface UseBlocklyProps {
       };
     };
   };
+  language: 'en' | 'ru';
 }
 
-export const useBlockly = ({ translations }: UseBlocklyProps) => {
+export const useBlockly = ({ translations, language }: UseBlocklyProps) => {
+  const setBlocklyLocale = useCallback((lang: 'en' | 'ru') => {
+    const messages = lang === 'en' ? En : Ru;
+    Blockly.setLocale(messages);
+  }, []);
+
   useEffect(() => {
+    // Установить локаль при изменении языка
+    setBlocklyLocale(language);
+
+    // Определить кастомные блоки с учетом текущего языка
     Blockly.Blocks['ar_run'] = {
       init: function() {
         this.appendDummyInput()
@@ -46,5 +58,5 @@ export const useBlockly = ({ translations }: UseBlocklyProps) => {
         this.setHelpUrl("");
       }
     };
-  }, [translations]);
+  }, [translations, language, setBlocklyLocale]);
 };
