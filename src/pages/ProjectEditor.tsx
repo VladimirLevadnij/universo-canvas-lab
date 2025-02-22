@@ -11,13 +11,18 @@ import { useBlockly } from '@/hooks/useBlockly';
 import { useProject } from '@/hooks/useProject';
 import { isFlowContent } from '@/types/project';
 
+// Extending WorkspaceSvg type to include our custom property
+interface ExtendedWorkspace extends Blockly.WorkspaceSvg {
+  _dragListenerAdded?: boolean;
+}
+
 const ProjectEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { translations, language, setLanguage } = useI18n();
   const [userId, setUserId] = useState<string | null>(null);
-  const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
+  const [workspace, setWorkspace] = useState<ExtendedWorkspace | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -55,18 +60,19 @@ const ProjectEditor = () => {
   }, [workspace, saveContent]);
 
   // Обработчик изменений в workspace с учетом перетаскивания
-  const handleWorkspaceChange = useCallback((newWorkspace: Blockly.WorkspaceSvg) => {
+  const handleWorkspaceChange = useCallback((newWorkspace: ExtendedWorkspace) => {
     console.log('Workspace changed');
     setWorkspace(newWorkspace);
     
     // Добавляем обработчики начала и окончания перетаскивания
-    if (!newWorkspace.dragStartListener) {
-      newWorkspace.addChangeListener((event) => {
+    if (!newWorkspace._dragListenerAdded) {
+      newWorkspace.addChangeListener((event: Blockly.Events.Abstract) => {
         if (event.type === Blockly.Events.BLOCK_DRAG) {
-          setIsDragging(event.isStart);
+          const dragEvent = event as Blockly.Events.BlockDrag;
+          setIsDragging(dragEvent.isStart || false);
         }
       });
-      newWorkspace.dragStartListener = true;
+      newWorkspace._dragListenerAdded = true;
     }
 
     // Сохраняем только если это не перетаскивание
