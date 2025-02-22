@@ -62,35 +62,36 @@ export const useProject = ({ id, translations }: UseProjectProps) => {
   const saveContent = useMutation({
     mutationFn: async (content: FlowContent) => {
       if (!id) throw new Error("Project ID is required");
-      
-      // Проверяем существование записи перед upsert
+
       const { data: existingContent } = await supabase
         .from('project_content')
         .select('*')
         .eq('project_id', id)
         .maybeSingle();
 
-      // Если запись не существует, создаем новую
       if (!existingContent) {
         const { error } = await supabase
           .from('project_content')
           .insert([{
             project_id: id,
-            content: content as unknown as Json,
+            content: content as Json,
+            version: 1
           }]);
 
         if (error) throw error;
       } else {
-        // Если запись существует, обновляем её
         const { error } = await supabase
           .from('project_content')
           .update({
-            content: content as unknown as Json,
+            content: content as Json,
+            version: existingContent.version + 1
           })
           .eq('project_id', id);
 
         if (error) throw error;
       }
+
+      return content;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-content', id] });

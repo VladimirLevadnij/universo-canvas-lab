@@ -41,6 +41,114 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
               },
             ],
           },
+          {
+            kind: 'category',
+            name: 'Logic',
+            colour: '210',
+            contents: [
+              {
+                kind: 'block',
+                type: 'controls_if'
+              },
+              {
+                kind: 'block',
+                type: 'logic_compare'
+              },
+              {
+                kind: 'block',
+                type: 'logic_operation'
+              },
+              {
+                kind: 'block',
+                type: 'logic_boolean'
+              },
+              {
+                kind: 'block',
+                type: 'logic_null'
+              },
+            ]
+          },
+          {
+            kind: 'category',
+            name: 'Loops',
+            colour: '120',
+            contents: [
+              {
+                kind: 'block',
+                type: 'controls_repeat_ext'
+              },
+              {
+                kind: 'block',
+                type: 'controls_whileUntil'
+              },
+              {
+                kind: 'block',
+                type: 'controls_for'
+              },
+              {
+                kind: 'block',
+                type: 'controls_forEach'
+              },
+            ]
+          },
+          {
+            kind: 'category',
+            name: 'Math',
+            colour: '230',
+            contents: [
+              {
+                kind: 'block',
+                type: 'math_number'
+              },
+              {
+                kind: 'block',
+                type: 'math_arithmetic'
+              },
+              {
+                kind: 'block',
+                type: 'math_single'
+              },
+              {
+                kind: 'block',
+                type: 'math_round'
+              },
+            ]
+          },
+          {
+            kind: 'category',
+            name: 'Text',
+            colour: '160',
+            contents: [
+              {
+                kind: 'block',
+                type: 'text'
+              },
+              {
+                kind: 'block',
+                type: 'text_join'
+              },
+              {
+                kind: 'block',
+                type: 'text_append'
+              },
+              {
+                kind: 'block',
+                type: 'text_length'
+              },
+            ]
+          },
+          {
+            kind: 'category',
+            name: 'Variables',
+            custom: 'VARIABLE',
+            colour: '330',
+          },
+          {
+            kind: 'category',
+            name: 'Functions',
+            custom: 'PROCEDURE',
+            colour: '290',
+          },
         ],
       },
       trashcan: true,
@@ -91,13 +199,22 @@ const BlocklyComponent: React.FC<BlocklyComponentProps> = ({ initialXml, onWorks
       }
     }
 
-    // Set up workspace change listener
+    // Set up workspace change listener with debounce
     if (onWorkspaceChange && workspaceRef.current) {
+      let timeoutId: NodeJS.Timeout;
+      
       const changeListener = () => {
         if (workspaceRef.current) {
-          onWorkspaceChange(workspaceRef.current);
+          // Clear previous timeout
+          clearTimeout(timeoutId);
+          
+          // Set new timeout
+          timeoutId = setTimeout(() => {
+            onWorkspaceChange(workspaceRef.current!);
+          }, 500); // Debounce for 500ms
         }
       };
+      
       workspaceRef.current.addChangeListener(changeListener);
     }
 
