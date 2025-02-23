@@ -66,7 +66,8 @@ const ProjectEditor = () => {
         event.type === Blockly.Events.SELECTED ||
         event.type === Blockly.Events.THEME_CHANGE ||
         event.type === Blockly.Events.VIEWPORT_CHANGE ||
-        event.type === Blockly.Events.TOOLBOX_ITEM_SELECT) {
+        event.type === Blockly.Events.TOOLBOX_ITEM_SELECT ||
+        event.type === Blockly.Events.FINISHED_LOADING) {
       return false;
     }
 
@@ -98,11 +99,16 @@ const ProjectEditor = () => {
   }, [isDragging, saveContent, lastSaveTimeout]);
 
   const handleWorkspaceChange = useCallback((newWorkspace: ExtendedWorkspace) => {
-    console.log('Workspace changed');
-    setWorkspace(newWorkspace);
+    // Устанавливаем workspace только один раз при инициализации
+    if (!workspace) {
+      console.log('Setting initial workspace');
+      setWorkspace(newWorkspace);
+    }
     
     if (!newWorkspace._dragListenerAdded) {
       newWorkspace.addChangeListener((event: Blockly.Events.Abstract) => {
+        console.log('Workspace event:', event.type);
+        
         // Обработка перетаскивания
         if (event.type === Blockly.Events.BLOCK_DRAG) {
           const dragEvent = event as Blockly.Events.BlockDrag;
@@ -112,12 +118,13 @@ const ProjectEditor = () => {
 
         // Проверяем, нужно ли сохранять после этого события
         if (shouldSaveWorkspace(event) && !isDragging) {
+          console.log('Triggering save for event type:', event.type);
           debouncedSave(newWorkspace);
         }
       });
       newWorkspace._dragListenerAdded = true;
     }
-  }, [debouncedSave, isDragging, shouldSaveWorkspace]);
+  }, [workspace, debouncedSave, isDragging, shouldSaveWorkspace]);
 
   useEffect(() => {
     return () => {
